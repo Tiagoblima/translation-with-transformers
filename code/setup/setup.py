@@ -8,8 +8,8 @@ from layers.layers import Encoder, EncoderLayer, Transformer
 from util.util import create_masks, positional_encoding, point_wise_feed_forward_network, CustomSchedule, loss_function
 
 BASE_DIR = 'Indigenous-Languages-Resources/'
-train_examples = open(os.path.join(BASE_DIR,'training/Portugues-Guarani.txt'), encoding='utf8').readlines()
-val_examples = open(os.path.join(BASE_DIR,'validation/Portugues-Guarani.txt'), encoding='utf8').readlines()
+train_examples = open(os.path.join(BASE_DIR,'training/Guarani-Portugues.txt'), encoding='utf8').readlines()
+val_examples = open(os.path.join(BASE_DIR,'validation/Guarani-Portugues.txt'), encoding='utf8').readlines()
 
 print(train_examples[:1])
 
