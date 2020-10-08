@@ -7,8 +7,9 @@ import tensorflow_datasets as tfds
 from layers.layers import Encoder, EncoderLayer, Transformer
 from util.util import create_masks, positional_encoding, point_wise_feed_forward_network, CustomSchedule, loss_function
 
-train_examples = open('training/Portugues-Guarani.txt', encoding='utf8').readlines()
-val_examples = open('testing/Portugues-Guarani.txt', encoding='utf8').readlines()
+BASE_DIR = 'Indigenous-Languages-Resources/'
+train_examples = open(os.path.join(BASE_DIR,'training/Portugues-Guarani.txt'), encoding='utf8').readlines()
+val_examples = open(os.path.join(BASE_DIR,'validation/Portugues-Guarani.txt'), encoding='utf8').readlines()
 
 print(train_examples[:1])
 
@@ -133,9 +134,9 @@ fn_out, _ = sample_transformer(temp_input, temp_target, training=False,
 
 print(fn_out.shape)  # (batch_size, tar_seq_len, target_vocab_size)
 
-num_layers = 4
-d_model = 128
-dff = 512
+num_layers = 6
+d_model = 512
+dff = 2048
 num_heads = 8
 
 input_vocab_size = tokenizer_pt.vocab_size + 2

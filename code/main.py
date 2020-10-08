@@ -51,7 +51,7 @@ def main():
     testing_lang = ['Guarani.txt']
     references = []
     ref_langs = ['NTLH.txt', 'acf.txt', 'NVI.txt', 'aa.txt', 'Guarani.txt']
-    test_dir = 'testing/'
+    test_dir = os.path.join(BASE_DIR,'testing/')
     print(os.listdir(test_dir))
     for filename in os.listdir(test_dir):
         if filename in ref_langs:
