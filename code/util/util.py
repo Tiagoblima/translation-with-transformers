@@ -4,81 +4,80 @@ import numpy as np
 import tensorflow as tf
 import unicodedata
 from nltk.translate.bleu_score import SmoothingFunction, sentence_bleu
+import re
 
 
-def convert(lang, tensor):
-    for t in tensor:
-        if t != 0:
-            print("%d ----> %s" % (t, lang.index_word[t]))
+def get_angles(pos, i, d_model):
+    angle_rates = 1 / np.power(10000, (2 * (i // 2)) / np.float32(d_model))
+    return pos * angle_rates
 
 
-def tokenize(lang):
-    lang_tokenizer = tf.keras.preprocessing.text.Tokenizer(filters='')
-    lang_tokenizer.fit_on_texts(lang)
+def positional_encoding(position, d_model):
+    angle_rads = get_angles(np.arange(position)[:, np.newaxis],
+                            np.arange(d_model)[np.newaxis, :],
+                            d_model)
 
-    tensor = lang_tokenizer.texts_to_sequences(lang)
+    # apply sin to even indices in the array; 2i
+    angle_rads[:, 0::2] = np.sin(angle_rads[:, 0::2])
 
-    tensor = tf.keras.preprocessing.sequence.pad_sequences(tensor,
-                                                           padding='post')
+    # apply cos to odd indices in the array; 2i+1
+    angle_rads[:, 1::2] = np.cos(angle_rads[:, 1::2])
 
-    return tensor, lang_tokenizer
+    pos_encoding = angle_rads[np.newaxis, ...]
 
-
-# Converts the unicode file to ascii
-def unicode_to_ascii(s):
-    return ''.join(c for c in unicodedata.normalize('NFD', s)
-                   if unicodedata.category(c) != 'Mn')
+    return tf.cast(pos_encoding, dtype=tf.float32)
 
 
-def preprocess_sentence(w):
-    w = unicode_to_ascii(w.lower().strip())
+def create_padding_mask(seq):
+    seq = tf.cast(tf.math.equal(seq, 0), tf.float32)
 
-    # creating a space between a word and the punctuation following it eg: "he is a boy." => "he is a boy ."
-    # Reference:- https://stackoverflow.com/questions/3645931/python-padding-punctuation-with-white-spaces-keeping
-    # -punctuation
-    w = re.sub(r"([?.!,Â¿])", r" \1 ", w)
-    w = re.sub(r'[" "]+', " ", w)
-
-    # replacing everything with space except (a-z, A-Z, ".", "?", "!", ",")
-    w = re.sub(r"[^a-zA-Z?.!,Â¿]+", " ", w)
-
-    w = w.rstrip().strip()
-
-    # adding a start and an end token to the sentence
-    # so that the model know when to start and stop predicting.
-    w = '<start> ' + w + ' <end>'
-    return w
+    # add extra dimensions to add the padding
+    # to the attention logits.
+    return seq[:, tf.newaxis, tf.newaxis, :]  # (batch_size, 1, 1, seq_len)
 
 
-# 1. Remove the accents
-# 2. Clean the sentences
-# 3. Return word pairs in the format: [ENGLISH, SPANISH]
-def create_dataset(path, num_examples, start=0):
-    lines = io.open(path, encoding='utf8').read().strip().split('\n')
-
-    if num_examples is None:
-        num_examples = len(lines)
-
-    word_pairs = [[preprocess_sentence(w) for w in l.split('\t')] for l in lines[start:start + num_examples]]
-
-    return zip(*word_pairs)
+def create_look_ahead_mask(size):
+    mask = 1 - tf.linalg.band_part(tf.ones((size, size)), -1, 0)
+    return mask  # (seq_len, seq_len)
 
 
-def load_dataset(path, num_examples=None):
-    # creating cleaned input, output pairs
-    targ_lang, inp_lang = create_dataset(path, num_examples)
+def scaled_dot_product_attention(q, k, v, mask):
+    """Calculate the attention weights.
+    q, k, v must have matching leading dimensions.
+    k, v must have matching penultimate dimension, i.e.: seq_len_k = seq_len_v.
+    The mask has different shapes depending on its type(padding or look ahead)
+    but it must be broadcastable for addition.
 
-    input_tensor, inp_lang_tokenizer = tokenize(inp_lang)
-    target_tensor, targ_lang_tokenizer = tokenize(targ_lang)
+    Args:
+      q: query shape == (..., seq_len_q, depth)
+      k: key shape == (..., seq_len_k, depth)
+      v: value shape == (..., seq_len_v, depth_v)
+      mask: Float tensor with shape broadcastable
+            to (..., seq_len_q, seq_len_k). Defaults to None.
 
-    return input_tensor, target_tensor, inp_lang_tokenizer, targ_lang_tokenizer
+    Returns:
+      output, attention_weights
+    """
+
+    matmul_qk = tf.matmul(q, k, transpose_b=True)  # (..., seq_len_q, seq_len_k)
+
+    # scale matmul_qk
+    dk = tf.cast(tf.shape(k)[-1], tf.float32)
+    scaled_attention_logits = matmul_qk / tf.math.sqrt(dk)
+
+    # add the mask to the scaled tensor.
+    if mask is not None:
+        scaled_attention_logits += (mask * -1e9)
+
+        # softmax is normalized on the last axis (seq_len_k) so that the scores
+    # add up to 1.
+    attention_weights = tf.nn.softmax(scaled_attention_logits, axis=-1)  # (..., seq_len_q, seq_len_k)
+
+    output = tf.matmul(attention_weights, v)  # (..., seq_len_q, depth_v)
+
+    return output, attention_weights
 
 
-def max_length(tensor):
-    return max(len(t) for t in tensor)
-
-
-optimizer = tf.keras.optimizers.Adam()
 loss_object = tf.keras.losses.SparseCategoricalCrossentropy(
     from_logits=True, reduction='none')
 
@@ -90,33 +89,74 @@ def loss_function(real, pred):
     mask = tf.cast(mask, dtype=loss_.dtype)
     loss_ *= mask
 
-    return tf.reduce_mean(loss_)
+    return tf.reduce_sum(loss_) / tf.reduce_sum(mask)
 
 
-def bleu_accuracy(original, sentences):
-    translation = []
-    unknow_words = []
-    for sentence in sentences:
-        unknow_words.append([i for i in sentence.split(' ') if i not in inp_lang.word_index.keys()])
-        result, sentence, attention_plot = evaluate(sentence, True)
-        result = result.split()
-        result.pop()
-        translation.append(result)
+def create_masks(inp, tar):
+    # Encoder padding mask
+    enc_padding_mask = create_padding_mask(inp)
 
-    references = []
+    # Used in the 2nd attention block in the decoder.
+    # This padding mask is used to mask the encoder outputs.
+    dec_padding_mask = create_padding_mask(inp)
 
-    for ref in original:
-        references.append(ref.split())
+    # Used in the 1st attention block in the decoder.
+    # It is used to pad and mask future tokens in the input received by
+    # the decoder.
+    look_ahead_mask = create_look_ahead_mask(tf.shape(tar)[1])
+    dec_target_padding_mask = create_padding_mask(tar)
+    combined_mask = tf.maximum(dec_target_padding_mask, look_ahead_mask)
 
-    scores = []
+    return enc_padding_mask, combined_mask, dec_padding_mask
 
-    smoth = SmoothingFunction()
-    for hyp, ref in zip(translation, references):
-        try:
-            score = sentence_bleu([ref], hypothesis=hyp, smoothing_function=smoth.method4)
 
-            scores.append(score)
-        except ZeroDivisionError:
-            pass
+def print_out(q, k, v):
+    temp_out, temp_attn = scaled_dot_product_attention(
+        q, k, v, None)
+    print('Attention weights are:')
+    print(temp_attn)
+    print('Output is:')
+    print(temp_out)
 
-    return np.mean(scores), np.sqrt(np.var(scores)), list(itertools.chain.from_iterable(unknow_words))
+
+def point_wise_feed_forward_network(d_model, dff):
+    return tf.keras.Sequential([
+        tf.keras.layers.Dense(dff, activation='relu'),  # (batch_size, seq_len, dff)
+        tf.keras.layers.Dense(d_model)  # (batch_size, seq_len, d_model)
+    ])
+
+
+class CustomSchedule(tf.keras.optimizers.schedules.LearningRateSchedule):
+    def __init__(self, d_model, warmup_steps=4000):
+        super(CustomSchedule, self).__init__()
+
+        self.d_model = d_model
+        self.d_model = tf.cast(self.d_model, tf.float32)
+
+        self.warmup_steps = warmup_steps
+
+    def __call__(self, step):
+        arg1 = tf.math.rsqrt(step)
+        arg2 = step * (self.warmup_steps ** -1.5)
+
+        return tf.math.rsqrt(self.d_model) * tf.math.minimum(arg1, arg2)
+
+
+def preprocess_sentence(w):
+    w = w.lower().strip()
+
+    # creating a space between a word and the punctuation following it eg: "he is a boy." => "he is a boy ."
+    # Reference:- https://stackoverflow.com/questions/3645931/python-padding-punctuation-with-white-spaces-keeping
+    # -punctuation
+    w = re.sub(r"([?.!,¿])", r" \1 ", w)
+    w = re.sub(r'[" "]+', " ", w)
+
+    # replacing everything with space except (a-z, A-Z, ".", "?", "!", ",")
+    w = re.sub(r"[^\w?.!,¿]+", " ", w)
+
+    w = w.strip()
+
+    # adding a start and an end token to the sentence
+    # so that the model know when to start and stop predicting.
+
+    return w
