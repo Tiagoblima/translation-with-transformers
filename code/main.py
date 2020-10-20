@@ -1,14 +1,16 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import os
+import sys
 import time
-from nltk.translate.bleu_score import sentence_bleu
-from nltk.translate.bleu_score import SmoothingFunction
+
 import numpy as np
-import os, sys
-from setup.setup import train_loss, train_accuracy, train_step, train_dataset, ckpt_manager, translate
-from util.util import preprocess_sentence
+from nltk.translate.bleu_score import SmoothingFunction
+from nltk.translate.bleu_score import sentence_bleu
 
 from setup.setup import BASE_DIR
+from setup.setup import train_loss, train_accuracy, train_step, train_dataset, ckpt_manager, translate
+from util.util import preprocess_sentence
 
 EPOCHS = 100
 
