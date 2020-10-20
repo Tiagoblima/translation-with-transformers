@@ -8,7 +8,7 @@ import os, sys
 from setup.setup import train_loss, train_accuracy, train_step, train_dataset, ckpt_manager, translate
 from util.util import preprocess_sentence
 
-from code.setup.setup import BASE_DIR
+from setup.setup import BASE_DIR
 
 EPOCHS = 100
 
