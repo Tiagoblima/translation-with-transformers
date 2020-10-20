@@ -13,7 +13,7 @@ from setup.setup import BASE_DIR
 EPOCHS = 100
 
 
-def main():
+def train():
     for epoch in range(EPOCHS):
         start = time.time()
 
@@ -39,21 +39,14 @@ def main():
 
         print('Time taken for 1 epoch: {} secs\n'.format(time.time() - start))
 
-    testing_lang = ['Guarani.txt']
-    references = []
-    test_dir = 'testing/'
-    print(os.listdir(test_dir))
-    for filename in os.listdir(test_dir):
-        if filename not in testing_lang:
-            try:
-                references.append(open(os.path.join(test_dir, filename), encoding='utf-8').readlines())
-            except IsADirectoryError:
-                pass
 
+def main():
+    # train()
     testing_lang = ['Guarani.txt']
     references = []
-    ref_langs = ['NTLH.txt', 'acf.txt', 'NVI.txt', 'aa.txt', 'Guarani.txt']
+    ref_langs = ['NTLH.txt', 'acf.txt', 'NVI.txt', 'aa.txt']
     test_dir = os.path.join(BASE_DIR, 'testing/')
+    test_corpus = open(os.path.join(test_dir, testing_lang[0]), encoding='utf-8').readlines()
     print(os.listdir(test_dir))
     for filename in os.listdir(test_dir):
         if filename in ref_langs:
@@ -62,22 +55,23 @@ def main():
             except IsADirectoryError:
                 pass
 
-    test_corpus = open(os.path.join(test_dir, testing_lang[0]), encoding='utf-8').readlines()
+
 
     print()
     total = len(test_corpus)
     print("Total test examples: ", total)
     scores = np.zeros(shape=(total, 1))
     for i, text in enumerate(test_corpus):
-        refs = [preprocess_sentence(ref[i]).split() for ref in references]
-        translation = translate(preprocess_sentence(text)).split()
+        refs = [ref[i].lower().split() for ref in references]
+        translation = translate(preprocess_sentence(text)).lower().split()
 
         smoth = SmoothingFunction()
-        scores[i] = sentence_bleu(refs, hypothesis=translation, smoothing_function=smoth.method4)
-        sys.stdout.write('\r' + 'Loading: {:.2f}% Score Mean: {:.2f} STD: {:.2f}'.format(((i + 1) / total) * 100,
-                                                                                         np.mean(scores[:i]),
-                                                                                         np.std(scores)))
-        sys.stdout.flush()
+        scores[i] = sentence_bleu(references=refs, hypothesis=translation, smoothing_function=smoth.method4)
+        if i % 10 == 0:
+            sys.stdout.write('\r' + 'Loading: {:.2f}% Score Mean: {:.2f} STD: {:.2f}'.format(((i + 1) / total) * 100,
+                                                                                             np.mean(scores[:i]),
+                                                                                             np.std(scores)))
+            sys.stdout.flush()
 
     print("Mean: {} STD: {}".format(np.mean(scores), np.std(scores)))
 
