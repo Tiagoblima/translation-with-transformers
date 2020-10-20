@@ -8,6 +8,8 @@ import os, sys
 from setup.setup import train_loss, train_accuracy, train_step, train_dataset, ckpt_manager, translate
 from util.util import preprocess_sentence
 
+from code.setup.setup import BASE_DIR
+
 EPOCHS = 100
 
 
@@ -51,7 +53,7 @@ def main():
     testing_lang = ['Guarani.txt']
     references = []
     ref_langs = ['NTLH.txt', 'acf.txt', 'NVI.txt', 'aa.txt', 'Guarani.txt']
-    test_dir = os.path.join(BASE_DIR,'testing/')
+    test_dir = os.path.join(BASE_DIR, 'testing/')
     print(os.listdir(test_dir))
     for filename in os.listdir(test_dir):
         if filename in ref_langs:

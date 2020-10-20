@@ -8,8 +8,8 @@ from layers.layers import Encoder, EncoderLayer, Transformer
 from util.util import create_masks, positional_encoding, point_wise_feed_forward_network, CustomSchedule, loss_function
 
 BASE_DIR = 'Indigenous-Languages-Resources/'
-train_examples = open(os.path.join(BASE_DIR,'training/Guarani-Portugues.txt'), encoding='utf8').readlines()
-val_examples = open(os.path.join(BASE_DIR,'validation/Guarani-Portugues.txt'), encoding='utf8').readlines()
+train_examples = open(os.path.join(BASE_DIR, 'training/Guarani-Portugues.txt'), encoding='utf8').readlines()
+val_examples = open(os.path.join(BASE_DIR, 'validation/Guarani-Portugues.txt'), encoding='utf8').readlines()
 
 print(train_examples[:1])
 
@@ -157,7 +157,6 @@ transformer = Transformer(num_layers, d_model, num_heads, dff,
                           pe_target=target_vocab_size,
                           rate=dropout_rate)
 
-
 # The @tf.function trace-compiles train_step into a TF graph for faster
 # execution. The function specializes to the precise shape of the argument
 # tensors. To avoid re-tracing due to the variable sequence lengths or variable
@@ -168,7 +167,7 @@ train_step_signature = [
     tf.TensorSpec(shape=(None, None), dtype=tf.int64),
     tf.TensorSpec(shape=(None, None), dtype=tf.int64),
 ]
-checkpoint_path = "./checkpoints/train"
+checkpoint_path = "/content/drive/My Drive/checkpoints/train"
 
 ckpt = tf.train.Checkpoint(transformer=transformer,
                            optimizer=optimizer)
