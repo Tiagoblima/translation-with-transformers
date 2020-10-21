@@ -8,8 +8,9 @@ import numpy as np
 from nltk.translate.bleu_score import SmoothingFunction
 from nltk.translate.bleu_score import sentence_bleu
 
+from setup.load_corpus import train_dataset
 from setup.setup import BASE_DIR
-from setup.setup import train_loss, train_accuracy, train_step, train_dataset, ckpt_manager, translate
+from setup.setup import train_loss, train_accuracy, train_step, ckpt_manager, translate
 from util.util import preprocess_sentence
 
 EPOCHS = 100
@@ -75,7 +76,7 @@ def main():
                                                                                              np.std(scores)))
             sys.stdout.flush()
 
-    print("Mean: {} STD: {}".format(np.mean(scores), np.std(scores)))
+    print("\nMean: {} STD: {}".format(np.mean(scores), np.std(scores)))
 
 
 # Press the green button in the gutter to run the script.
