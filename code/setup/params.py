@@ -1,4 +1,5 @@
 BASE_DIR = 'Indigenous-Languages-Resources/'
+checkpoint_path = "/content/drive/My Drive/checkpoints/train"
 
 BUFFER_SIZE = 20000
 BATCH_SIZE = 64
