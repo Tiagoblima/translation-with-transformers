@@ -4,14 +4,11 @@ import tensorflow as tf
 
 from layers.layers import Transformer
 from util.util import create_masks, CustomSchedule, loss_function
-
-from .load_corpus import tokenizer_inp, tokenizer_targ,MAX_LENGTH
+from .load_corpus import tokenizer_inp, tokenizer_targ
 from .params import *
-
 
 input_vocab_size = tokenizer_targ.vocab_size + 2
 target_vocab_size = tokenizer_inp.vocab_size + 2
-
 
 learning_rate = CustomSchedule(d_model)
 
