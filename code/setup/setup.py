@@ -35,8 +35,6 @@ train_step_signature = [
     tf.TensorSpec(shape=(None, None), dtype=tf.int64),
 ]
 
-checkpoint_path = "/content/drive/My Drive/checkpoints/train"
-
 ckpt = tf.train.Checkpoint(transformer=transformer,
                            optimizer=optimizer)
 
