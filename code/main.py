@@ -78,6 +78,8 @@ def test():
 
 
 def main():
+    train()
+    test()
     pass
 
 
