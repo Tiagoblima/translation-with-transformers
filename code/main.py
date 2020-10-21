@@ -6,7 +6,7 @@ import time
 
 import numpy as np
 from nltk.translate.bleu_score import SmoothingFunction
-from nltk.translate.bleu_score import sentence_bleu
+from nltk.translate.bleu_score import sentence_bleu, corpus_bleu
 
 from setup.load_corpus import train_dataset
 from setup.setup import BASE_DIR
@@ -43,7 +43,7 @@ def train():
         print('Time taken for 1 epoch: {} secs\n'.format(time.time() - start))
 
 
-def main():
+def test():
     # train()
     testing_lang = ['Guarani.txt']
     references = []
@@ -58,25 +58,27 @@ def main():
             except IsADirectoryError:
                 pass
 
-
-
     print()
     total = len(test_corpus)
     print("Total test examples: ", total)
-    scores = np.zeros(shape=(total, 1))
+
+    predictions = []
+    true_translations = []
     for i, text in enumerate(test_corpus):
         refs = [ref[i].lower().split() for ref in references]
+
         translation = translate(preprocess_sentence(text)).lower().split()
+        predictions.append(translation)
+        true_translations.append(refs)
 
-        smoth = SmoothingFunction()
-        scores[i] = sentence_bleu(references=refs, hypothesis=translation, smoothing_function=smoth.method4)
-        if i % 10 == 0:
-            sys.stdout.write('\r' + 'Loading: {:.2f}% Score Mean: {:.2f} STD: {:.2f}'.format(((i + 1) / total) * 100,
-                                                                                             np.mean(scores[:i]),
-                                                                                             np.std(scores)))
-            sys.stdout.flush()
+    smoth = SmoothingFunction()
+    score = corpus_bleu(true_translations, predictions, smoothing_function=smoth.method4)
 
-    print("\nMean: {} STD: {}".format(np.mean(scores), np.std(scores)))
+    print("\nCorpus score: ", score)
+
+
+def main():
+    pass
 
 
 # Press the green button in the gutter to run the script.
