@@ -56,6 +56,7 @@ train_dataset = train_dataset.cache()
 train_dataset = train_dataset.shuffle(BUFFER_SIZE).padded_batch(BATCH_SIZE)
 train_dataset = train_dataset.prefetch(tf.data.experimental.AUTOTUNE)
 
+
 val_dataset = val_examples.map(tf_encode)
 val_dataset = val_dataset.filter(filter_max_length).padded_batch(BATCH_SIZE)
 

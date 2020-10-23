@@ -1,5 +1,6 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import json
 import os
 import sys
 import time
@@ -9,7 +10,7 @@ from nltk.translate.bleu_score import SmoothingFunction
 from nltk.translate.bleu_score import sentence_bleu, corpus_bleu
 
 from setup.load_corpus import train_dataset
-from setup.setup import BASE_DIR
+from setup.setup import BASE_DIR, test_sentence
 from setup.setup import train_loss, train_accuracy, train_step, ckpt_manager, translate
 from util.util import preprocess_sentence
 
@@ -45,32 +46,13 @@ def train():
 
 def test():
     # train()
-    testing_lang = ['Guarani.txt']
-    references = []
-    ref_langs = ['NTLH.txt', 'acf.txt', 'NVI.txt', 'aa.txt']
-    test_dir = os.path.join(BASE_DIR, 'testing/')
-    test_corpus = open(os.path.join(test_dir, testing_lang[0]), encoding='utf-8').readlines()
-    print(os.listdir(test_dir))
-    for filename in os.listdir(test_dir):
-        if filename in ref_langs:
-            try:
-                references.append(open(os.path.join(test_dir, filename), encoding='utf-8').readlines())
-            except IsADirectoryError:
-                pass
 
-    print()
-    total = len(test_corpus)
-    print("Total test examples: ", total)
+    test_file = os.path.join(BASE_DIR, 'testing/test_corpus_gn-pt.json')
+    test_corpus = list(json.load(open(test_file, encoding='utf-8')).values())
 
-    predictions = []
-    true_translations = []
-    for i, text in enumerate(test_corpus):
-        refs = [ref[i].lower().split() for ref in references]
-
-        translation = translate(preprocess_sentence(text)).lower().split()
-        predictions.append(translation)
-        true_translations.append(refs)
-
+    results = list(map(test_sentence, test_corpus))
+    predictions = [res[0] for res in results]
+    true_translations = [res[1] for res in results]
     smoth = SmoothingFunction()
     score = corpus_bleu(true_translations, predictions, smoothing_function=smoth.method4)
 

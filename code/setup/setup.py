@@ -157,3 +157,10 @@ def translate(sentence, plot=''):
         plot_attention_weights(attention_weights, sentence, result, plot)
 
     return predicted_sentence
+
+
+def test_sentence(args):
+    sentence, references = args
+    predicted = translate(sentence)
+
+    return predicted.lower().split(), references
