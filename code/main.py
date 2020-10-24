@@ -45,7 +45,7 @@ def train():
 
 
 def test():
-    # train()
+    train()
 
     test_file = os.path.join(BASE_DIR, 'testing/test_corpus_gn-pt.json')
     test_corpus = list(json.load(open(test_file, encoding='utf-8')).values())
