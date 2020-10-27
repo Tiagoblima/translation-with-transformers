@@ -1,10 +1,12 @@
 # Try experimenting with the size of that dataset
+import time
+
 import matplotlib.pyplot as plt
 import tensorflow as tf
 
 from layers.layers import Transformer
 from util.util import create_masks, CustomSchedule, loss_function
-from .load_corpus import tokenizer_inp, tokenizer_targ
+from .load_corpus import tokenizer_inp, tokenizer_targ, train_dataset
 from .params import *
 
 input_vocab_size = tokenizer_targ.vocab_size + 2
@@ -157,6 +159,33 @@ def translate(sentence, plot=''):
         plot_attention_weights(attention_weights, sentence, result, plot)
 
     return predicted_sentence
+
+
+def train(epochs):
+    for epoch in range(epochs):
+        start = time.time()
+
+        train_loss.reset_states()
+        train_accuracy.reset_states()
+
+        # inp -> guarani, tar -> portugues
+        for (batch, (inp, tar)) in enumerate(train_dataset):
+            train_step(inp, tar)
+
+            if batch % 50 == 0:
+                print('Epoch {} Batch {} Loss {:.4f} Accuracy {:.4f}'.format(
+                    epoch + 1, batch, train_loss.result(), train_accuracy.result()))
+
+        if (epoch + 1) % 5 == 0:
+            ckpt_save_path = ckpt_manager.save()
+            print('Saving checkpoint for epoch {} at {}'.format(epoch + 1,
+                                                                ckpt_save_path))
+
+        print('Epoch {} Loss {:.4f} Accuracy {:.4f}'.format(epoch + 1,
+                                                            train_loss.result(),
+                                                            train_accuracy.result()))
+
+        print('Time taken for 1 epoch: {} secs\n'.format(time.time() - start))
 
 
 def test_sentence(args):

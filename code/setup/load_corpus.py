@@ -4,7 +4,6 @@ import tensorflow as tf
 import tensorflow_datasets as tfds
 from .params import *
 
-
 train_examples = open(os.path.join(BASE_DIR, 'training/Guarani-Portugues.txt'), encoding='utf8').readlines()
 val_examples = open(os.path.join(BASE_DIR, 'validation/Guarani-Portugues.txt'), encoding='utf8').readlines()
 
@@ -19,10 +18,10 @@ train_examples = tf.data.Dataset.from_tensor_slices((np.array(train_examples_pt)
 
 val_examples = tf.data.Dataset.from_tensor_slices((val_examples_pt, val_examples_gn))
 
-tokenizer_inp = tfds.features.text.SubwordTextEncoder.build_from_corpus(
+tokenizer_inp = tfds.deprecated.text.SubwordTextEncoder.build_from_corpus(
     (en.numpy() for pt, en in train_examples), target_vocab_size=2 ** 13)
 
-tokenizer_targ = tfds.features.text.SubwordTextEncoder.build_from_corpus(
+tokenizer_targ = tfds.deprecated.text.SubwordTextEncoder.build_from_corpus(
     (pt.numpy() for pt, en in train_examples), target_vocab_size=2 ** 13)
 
 
@@ -55,7 +54,6 @@ train_dataset = train_dataset.filter(filter_max_length)
 train_dataset = train_dataset.cache()
 train_dataset = train_dataset.shuffle(BUFFER_SIZE).padded_batch(BATCH_SIZE)
 train_dataset = train_dataset.prefetch(tf.data.experimental.AUTOTUNE)
-
 
 val_dataset = val_examples.map(tf_encode)
 val_dataset = val_dataset.filter(filter_max_length).padded_batch(BATCH_SIZE)
