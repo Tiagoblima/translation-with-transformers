@@ -1,10 +1,6 @@
 from layers.layers import Encoder, Decoder
 import tensorflow as tf
 
-from model.params import d_model
-from model.training import CustomSchedule
-
-
 
 class Transformer(tf.keras.Model):
     def __init__(self, num_layers, d_model, num_heads, dff, input_vocab_size,
@@ -30,7 +26,3 @@ class Transformer(tf.keras.Model):
         final_output = self.final_layer(dec_output)  # (batch_size, tar_seq_len, target_vocab_size)
 
         return final_output, attention_weights
-
-
-
-
