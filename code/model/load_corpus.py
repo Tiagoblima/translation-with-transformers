@@ -1,4 +1,6 @@
-from model.params import BASE_DIR, MAX_LENGTH, BUFFER_SIZE, BATCH_SIZE
+import os
+
+from model.params import BASE_DIR, MAX_LENGTH, BUFFER_SIZE, BATCH_SIZE, META_INFO_PATH
 import numpy as np
 import tensorflow as tf
 import tensorflow_datasets as tfds
@@ -23,9 +25,9 @@ train_examples = tf.data.Dataset.from_tensor_slices((np.array(train_examples_inp
 
 val_examples = tf.data.Dataset.from_tensor_slices((val_examples_inp, val_examples_tgt))
 
-vocab_fname = 'GUARANI'
+vocab_fname = os.path.join(META_INFO_PATH, 'GUARANI/GUARANI')
 tokenizer_inp = tfds.deprecated.text.SubwordTextEncoder.load_from_file(vocab_fname)
-vocab_fname = 'PORTUGUES'
+vocab_fname = os.path.join(META_INFO_PATH, 'PORTUGUES/PORTUGUES')
 tokenizer_tgt = tfds.deprecated.text.SubwordTextEncoder.load_from_file(vocab_fname)
 
 
