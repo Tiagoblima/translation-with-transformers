@@ -1,30 +1,50 @@
-# Try experimenting with the size of that dataset
+import json
 import time
 
-import matplotlib.pyplot as plt
 import tensorflow as tf
 
-from layers.layers import Transformer
-from util.util import create_masks, CustomSchedule, loss_function
-from .load_corpus import tokenizer_inp, tokenizer_targ, train_dataset
-from .params import *
+from model.load_corpus import input_vocab_size, target_vocab_size, train_dataset, tokenizer_inp, tokenizer_tgt
+from model.model import Transformer
+from model.params import num_layers, d_model, num_heads, dropout_rate, EPOCHS, MAX_LENGTH
+import matplotlib.pyplot as plt
+from tensorflow.keras.callbacks import History
 
-input_vocab_size = tokenizer_targ.vocab_size + 2
-target_vocab_size = tokenizer_inp.vocab_size + 2
+from model.util import create_masks
 
-learning_rate = CustomSchedule(d_model)
+history = History()
 
-optimizer = tf.keras.optimizers.Adam(learning_rate, beta_1=0.9, beta_2=0.98,
-                                     epsilon=1e-9)
+
+class CustomSchedule(tf.keras.optimizers.schedules.LearningRateSchedule):
+    def __init__(self, d_model, warmup_steps=4000):
+        super(CustomSchedule, self).__init__()
+
+        self.d_model = d_model
+        self.d_model = tf.cast(self.d_model, tf.float32)
+
+        self.warmup_steps = warmup_steps
+
+    def __call__(self, step):
+        arg1 = tf.math.rsqrt(step)
+        arg2 = step * (self.warmup_steps ** -1.5)
+
+        return tf.math.rsqrt(self.d_model) * tf.math.minimum(arg1, arg2)
+
+
+def loss_function(real, pred):
+    loss_object = tf.keras.losses.SparseCategoricalCrossentropy(
+        from_logits=True, reduction='none')
+    mask = tf.math.logical_not(tf.math.equal(real, 0))
+    loss_ = loss_object(real, pred)
+
+    mask = tf.cast(mask, dtype=loss_.dtype)
+    loss_ *= mask
+
+    return tf.reduce_sum(loss_) / tf.reduce_sum(mask)
+
+
 train_loss = tf.keras.metrics.Mean(name='train_loss')
 train_accuracy = tf.keras.metrics.SparseCategoricalAccuracy(
     name='train_accuracy')
-
-transformer = Transformer(num_layers, d_model, num_heads, dff,
-                          input_vocab_size, target_vocab_size,
-                          pe_input=input_vocab_size,
-                          pe_target=target_vocab_size,
-                          rate=dropout_rate)
 
 # The @tf.function trace-compiles train_step into a TF graph for faster
 # execution. The function specializes to the precise shape of the argument
@@ -32,10 +52,18 @@ transformer = Transformer(num_layers, d_model, num_heads, dff,
 # batch sizes (the last batch is smaller), use input_signature to specify
 # more generic shapes.
 
-train_step_signature = [
-    tf.TensorSpec(shape=(None, None), dtype=tf.int64),
-    tf.TensorSpec(shape=(None, None), dtype=tf.int64),
-]
+transformer = Transformer(num_layers, d_model, num_heads, dff,
+                          input_vocab_size, target_vocab_size,
+                          pe_input=input_vocab_size,
+                          pe_target=target_vocab_size,
+                          rate=dropout_rate)
+
+checkpoint_path = "./checkpoints/train"
+
+learning_rate = CustomSchedule(d_model)
+
+optimizer = tf.keras.optimizers.Adam(learning_rate, beta_1=0.9, beta_2=0.98,
+                                     epsilon=1e-9)
 
 ckpt = tf.train.Checkpoint(transformer=transformer,
                            optimizer=optimizer)
@@ -46,6 +74,15 @@ ckpt_manager = tf.train.CheckpointManager(ckpt, checkpoint_path, max_to_keep=5)
 if ckpt_manager.latest_checkpoint:
     ckpt.restore(ckpt_manager.latest_checkpoint)
     print('Latest checkpoint restored!!')
+
+train_step_signature = [
+    tf.TensorSpec(shape=(None, None), dtype=tf.int64),
+    tf.TensorSpec(shape=(None, None), dtype=tf.int64),
+]
+
+history = {}.fromkeys(["acc", "loss"])
+history["acc"] = []
+history["loss"] = []
 
 
 @tf.function(input_signature=train_step_signature)
@@ -70,13 +107,41 @@ def train_step(inp, tar):
     train_accuracy(tar_real, predictions)
 
 
+def train_model():
+    for epoch in range(EPOCHS):
+        start = time.time()
+
+        train_loss.reset_states()
+        train_accuracy.reset_states()
+
+        # inp -> guarani, tar -> portugues
+        for (batch, (inp, tar)) in enumerate(train_dataset):
+            train_step(inp, tar)
+
+            if batch % 50 == 0:
+                print('Epoch {} Batch {} Loss {:.4f} Accuracy {:.4f}'.format(
+                    epoch + 1, batch, train_loss.result(), train_accuracy.result()))
+
+        if (epoch + 1) % 5 == 0:
+            ckpt_save_path = ckpt_manager.save()
+            print('Saving checkpoint for epoch {} at {}'.format(epoch + 1,
+                                                                ckpt_save_path))
+        history["loss"].append(train_loss.result())
+        history["acc"].append(train_accuracy.result())
+        print('Epoch {} Loss {:.4f} Accuracy {:.4f}'.format(epoch + 1,
+                                                            train_loss.result(),
+                                                            train_accuracy.result()))
+
+        print('Time taken for 1 epoch: {} secs\n'.format(time.time() - start))
+    json.dump(history,open('history.json', 'w'))
+
+
 def evaluate(inp_sentence):
-    attention_weights = None
-    start_token = [tokenizer_targ.vocab_size]
-    end_token = [tokenizer_targ.vocab_size + 1]
+    start_token = [tokenizer_inp.vocab_size]
+    end_token = [tokenizer_tgt.vocab_size + 1]
 
     # inp sentence is portuguese, hence adding the start and end token
-    inp_sentence = start_token + tokenizer_targ.encode(inp_sentence) + end_token
+    inp_sentence = start_token + tokenizer_tgt.encode(inp_sentence) + end_token
     encoder_input = tf.expand_dims(inp_sentence, 0)
 
     # as the target is english, the first word to the transformer should be the
@@ -115,7 +180,7 @@ def evaluate(inp_sentence):
 def plot_attention_weights(attention, sentence, result, layer):
     fig = plt.figure(figsize=(16, 8))
 
-    sentence = tokenizer_targ.encode(sentence)
+    sentence = tokenizer_tgt.encode(sentence)
 
     attention = tf.squeeze(attention[layer], axis=0)
 
@@ -133,7 +198,7 @@ def plot_attention_weights(attention, sentence, result, layer):
         ax.set_ylim(len(result) - 1.5, -0.5)
 
         ax.set_xticklabels(
-            ['<start>'] + [tokenizer_targ.decode([i]) for i in sentence] + ['<end>'],
+            ['<start>'] + [tokenizer_tgt.decode([i]) for i in sentence] + ['<end>'],
             fontdict=fontdict, rotation=90)
 
         ax.set_yticklabels([tokenizer_inp.decode([i]) for i in result
@@ -150,46 +215,10 @@ def translate(sentence, plot=''):
     result, attention_weights = evaluate(sentence)
 
     predicted_sentence = tokenizer_inp.decode([i for i in result
-                                               if i < tokenizer_inp.vocab_size])
+                                              if i < tokenizer_inp.vocab_size])
 
     # print('Input: {}'.format(sentence))
     # print('Predicted translation: {}'.format(predicted_sentence))
-
     if plot:
         plot_attention_weights(attention_weights, sentence, result, plot)
-
     return predicted_sentence
-
-
-def train(epochs):
-    for epoch in range(epochs):
-        start = time.time()
-
-        train_loss.reset_states()
-        train_accuracy.reset_states()
-
-        # inp -> guarani, tar -> portugues
-        for (batch, (inp, tar)) in enumerate(train_dataset):
-            train_step(inp, tar)
-
-            if batch % 50 == 0:
-                print('Epoch {} Batch {} Loss {:.4f} Accuracy {:.4f}'.format(
-                    epoch + 1, batch, train_loss.result(), train_accuracy.result()))
-
-        if (epoch + 1) % 5 == 0:
-            ckpt_save_path = ckpt_manager.save()
-            print('Saving checkpoint for epoch {} at {}'.format(epoch + 1,
-                                                                ckpt_save_path))
-
-        print('Epoch {} Loss {:.4f} Accuracy {:.4f}'.format(epoch + 1,
-                                                            train_loss.result(),
-                                                            train_accuracy.result()))
-
-        print('Time taken for 1 epoch: {} secs\n'.format(time.time() - start))
-
-
-def test_sentence(args):
-    sentence, references = args
-    predicted = translate(sentence)
-
-    return predicted.lower().split(), references

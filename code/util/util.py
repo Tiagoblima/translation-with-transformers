@@ -1,10 +1,7 @@
-import io
 import re
+
 import numpy as np
 import tensorflow as tf
-import unicodedata
-from nltk.translate.bleu_score import SmoothingFunction, sentence_bleu
-import re
 
 
 def get_angles(pos, i, d_model):
