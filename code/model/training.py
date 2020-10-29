@@ -5,7 +5,7 @@ import tensorflow as tf
 
 from model.load_corpus import input_vocab_size, target_vocab_size, train_dataset, tokenizer_inp, tokenizer_tgt
 from model.model import Transformer
-from model.params import num_layers, d_model, num_heads, dropout_rate, EPOCHS, MAX_LENGTH
+from model.params import num_layers, d_model, num_heads, dropout_rate, EPOCHS, MAX_LENGTH, dff
 import matplotlib.pyplot as plt
 from tensorflow.keras.callbacks import History
 
