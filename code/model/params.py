@@ -1,6 +1,6 @@
 BASE_DIR = 'Indigenous-Languages-Resources/'
 checkpoint_path = "/content/drive/My Drive/checkpoints/train"
-META_INFO_PATH = '/Indigenous-Languages-Resources/meta-INFO'
+META_INFO_PATH = 'Indigenous-Languages-Resources/meta-INFO'
 BUFFER_SIZE = 20000
 BATCH_SIZE = 64
 
