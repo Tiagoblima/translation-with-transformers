@@ -66,7 +66,8 @@ val_dataset = val_examples.map(tf_encode)
 val_dataset = val_dataset.filter(filter_max_length).padded_batch(BATCH_SIZE)
 
 pt_batch, en_batch = next(iter(val_dataset))
-print(pt_batch, en_batch)
 
 input_vocab_size = tokenizer_tgt.vocab_size + 2
 target_vocab_size = tokenizer_inp.vocab_size + 2
+print("input_vocab_size: ", input_vocab_size)
+print("target_vocab_size: ", target_vocab_size)
