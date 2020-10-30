@@ -5,7 +5,7 @@ import tensorflow as tf
 
 from model.load_corpus import input_vocab_size, target_vocab_size, train_dataset, tokenizer_inp, tokenizer_tgt
 from model.model import Transformer
-from model.params import num_layers, d_model, num_heads, dropout_rate, EPOCHS, MAX_LENGTH, dff
+from model.params import num_layers, d_model, num_heads, dropout_rate, EPOCHS, MAX_LENGTH, dff, checkpoint_path
 import matplotlib.pyplot as plt
 from tensorflow.keras.callbacks import History
 
@@ -57,8 +57,6 @@ transformer = Transformer(num_layers, d_model, num_heads, dff,
                           pe_input=input_vocab_size,
                           pe_target=target_vocab_size,
                           rate=dropout_rate)
-
-checkpoint_path = "./checkpoints/train"
 
 learning_rate = CustomSchedule(d_model)
 
@@ -133,7 +131,7 @@ def train_model():
                                                             train_accuracy.result()))
 
         print('Time taken for 1 epoch: {} secs\n'.format(time.time() - start))
-    json.dump(history,open('history.json', 'w'))
+    json.dump(history, open('history.json', 'w'))
 
 
 def evaluate(inp_sentence):
@@ -215,7 +213,7 @@ def translate(sentence, plot=''):
     result, attention_weights = evaluate(sentence)
 
     predicted_sentence = tokenizer_inp.decode([i for i in result
-                                              if i < tokenizer_inp.vocab_size])
+                                               if i < tokenizer_inp.vocab_size])
 
     # print('Input: {}'.format(sentence))
     # print('Predicted translation: {}'.format(predicted_sentence))
