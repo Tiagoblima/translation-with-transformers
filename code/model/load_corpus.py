@@ -71,4 +71,3 @@ input_vocab_size = tokenizer_tgt.vocab_size + 2
 target_vocab_size = tokenizer_inp.vocab_size + 2
 print("input_vocab_size: ", input_vocab_size)
 print("target_vocab_size: ", target_vocab_size)
-print(train_dataset.output_shapes)
