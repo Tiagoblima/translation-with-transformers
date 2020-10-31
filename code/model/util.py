@@ -139,7 +139,7 @@ class CustomSchedule(tf.keras.optimizers.schedules.LearningRateSchedule):
         return tf.math.rsqrt(self.d_model) * tf.math.minimum(arg1, arg2)
 
 def preprocess_sentence(w):
-    w = w.lower().strip()
+    w = w.strip()
 
     # creating a space between a word and the punctuation following it eg: "he is a boy." => "he is a boy ."
     # Reference:- https://stackoverflow.com/questions/3645931/python-padding-punctuation-with-white-spaces-keeping
