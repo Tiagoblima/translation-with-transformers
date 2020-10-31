@@ -138,6 +138,7 @@ class CustomSchedule(tf.keras.optimizers.schedules.LearningRateSchedule):
 
         return tf.math.rsqrt(self.d_model) * tf.math.minimum(arg1, arg2)
 
+
 def preprocess_sentence(w):
     w = w.strip()
 
