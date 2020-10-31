@@ -124,8 +124,8 @@ def train_model():
             ckpt_save_path = ckpt_manager.save()
             print('Saving checkpoint for epoch {} at {}'.format(epoch + 1,
                                                                 ckpt_save_path))
-        history["loss"].append(train_loss.result())
-        history["acc"].append(train_accuracy.result())
+        history["loss"].append(float(train_loss.result().to_numpy()))
+        history["acc"].append(float(train_accuracy.result().to_numpy()))
         print('Epoch {} Loss {:.4f} Accuracy {:.4f}'.format(epoch + 1,
                                                             train_loss.result(),
                                                             train_accuracy.result()))
