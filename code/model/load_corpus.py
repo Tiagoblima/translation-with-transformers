@@ -5,7 +5,7 @@ import numpy as np
 import tensorflow as tf
 import tensorflow_datasets as tfds
 
-from util.util import preprocess_sentence
+from .util import preprocess_sentence
 
 train_examples = open(BASE_DIR + '/training/Guarani-Portugues.txt', encoding='utf8').readlines()
 val_examples = open(BASE_DIR + '/validation/Guarani-Portugues.txt', encoding='utf8').readlines()
@@ -26,14 +26,15 @@ train_examples = tf.data.Dataset.from_tensor_slices((np.array(train_examples_inp
 val_examples = tf.data.Dataset.from_tensor_slices((val_examples_inp, val_examples_tgt))
 
 vocab_fname = os.path.join(META_INFO_PATH, 'GUARANI/GUARANI')
-#tokenizer_inp = tfds.deprecated.text.SubwordTextEncoder.load_from_file(vocab_fname)
+# tokenizer_inp = tfds.deprecated.text.SubwordTextEncoder.load_from_file(vocab_fname)
 vocab_fname = os.path.join(META_INFO_PATH, 'PORTUGUES/PORTUGUES')
-#tokenizer_tgt = tfds.deprecated.text.SubwordTextEncoder.load_from_file(vocab_fname)
+# tokenizer_tgt = tfds.deprecated.text.SubwordTextEncoder.load_from_file(vocab_fname)
 tokenizer_inp = tfds.deprecated.text.SubwordTextEncoder.build_from_corpus(
-    (en.numpy() for pt, en in train_examples), target_vocab_size=2**13)
+    (en.numpy() for pt, en in train_examples), target_vocab_size=2 ** 13)
 
 tokenizer_tgt = tfds.deprecated.text.SubwordTextEncoder.build_from_corpus(
-    (pt.numpy() for pt, en in train_examples), target_vocab_size=2**13)
+    (pt.numpy() for pt, en in train_examples), target_vocab_size=2 ** 13)
+
 
 def encode(lang1, lang2):
     lang1 = [tokenizer_tgt.vocab_size] + tokenizer_tgt.encode(
@@ -64,7 +65,6 @@ train_dataset = train_dataset.filter(filter_max_length)
 train_dataset = train_dataset.cache()
 train_dataset = train_dataset.shuffle(BUFFER_SIZE).padded_batch(BATCH_SIZE)
 train_dataset = train_dataset.prefetch(tf.data.experimental.AUTOTUNE)
-
 
 val_dataset = val_examples.map(tf_encode)
 val_dataset = val_dataset.filter(filter_max_length).padded_batch(BATCH_SIZE)
