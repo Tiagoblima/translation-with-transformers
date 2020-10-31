@@ -17,8 +17,8 @@ train_examples_tgt = [preprocess_sentence(ex.strip().split('\t')[1]) for ex in t
 
 val_examples_inp = [preprocess_sentence(ex.strip().split('\t')[0]) for ex in val_examples]
 val_examples_tgt = [preprocess_sentence(ex.strip().split('\t')[1]) for ex in val_examples]
-print(train_examples_inp[:1])
-print(train_examples_tgt[:1])
+print(train_examples_inp[:1], len(train_examples_inp))
+print(train_examples_tgt[:1], len(train_examples_inp))
 
 train_examples = tf.data.Dataset.from_tensor_slices((np.array(train_examples_inp),
                                                      np.array(train_examples_tgt)))
