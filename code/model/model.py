@@ -1,4 +1,4 @@
-from model.layers import Encoder, Decoder
+from .layers import Encoder, Decoder
 import tensorflow as tf
 
 
