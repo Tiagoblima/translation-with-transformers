@@ -1,6 +1,6 @@
 import tensorflow as tf
 
-from util.util import point_wise_feed_forward_network, positional_encoding, scaled_dot_product_attention
+from model.util import point_wise_feed_forward_network, positional_encoding, scaled_dot_product_attention
 
 
 class MultiHeadAttention(tf.keras.layers.Layer):
