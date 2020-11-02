@@ -108,7 +108,7 @@ def train_model():
 
 
 def evaluate(inp_sentence):
-    start_token = [tokenizer_inp.vocab_size]
+    start_token = [tokenizer_tgt.vocab_size]
     end_token = [tokenizer_tgt.vocab_size + 1]
 
     # inp sentence is portuguese, hence adding the start and end token
@@ -146,6 +146,7 @@ def evaluate(inp_sentence):
         output = tf.concat([output, predicted_id], axis=-1)
 
     return tf.squeeze(output, axis=0), attention_weights
+
 
 
 def plot_attention_weights(attention, sentence, result, layer):
