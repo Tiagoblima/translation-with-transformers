@@ -11,4 +11,4 @@ d_model = 512
 dff = 2048
 num_heads = 8
 dropout_rate = 0.1
-EPOCHS = 0
+EPOCHS = 100
